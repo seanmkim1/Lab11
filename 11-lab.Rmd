@@ -95,6 +95,7 @@ cv_states <- merge(cv_states, state_pops, by='state')
 
 -   Inspect the dimensions, `head`, and `tail` of the data
 -   Inspect the structure of each variables. Are they in the correct format?
+- Yes the variables are in the correct format. 
 
 ```{r}
 dim(cv_states)
@@ -110,6 +111,9 @@ str(cv_states)
 -   Order the data first by state, second by date
 -   Confirm the variables are now correctly formatted
 -   Inspect the range values for each variable. What is the date range? The range of cases and deaths?
+  - Date range is 06/01/2021 -> 03/23/2023. 
+  - Range of cases is is 24224 - 12170765
+  - Range of deaths is 255 - 105245
 
 ```{r}
 # format the date
@@ -147,6 +151,10 @@ max(cv_states$date)
 
 -   Use `plotly` for EDA: See if there are outliers or values that don't make sense for `new_cases` and `new_deaths`. Which states and which dates have strange values?
 
+ - New York 11/13/2022 -> 11/17/2022 had over 500 new deaths. I know New York was hit hard by covid, so this somewhat makes sense. Perhaps the delta strain.
+ - Florida had 445 deaths on 9/20/2023, which was another outlier. Florida and New York have very high state populations, so their higher death counts make sense.
+ - In terms of dates, 6/7/2021 had greatly higher numbers of new deaths for all states compared to the rest of the dates listed. These do seem like outliers. 
+ 
 -   Correct outliers: Set negative values for `new_cases` or `new_deaths` to 0
 
 -   Recalculate `cases` and `deaths` as cumulative sum of updated `new_cases` and `new_deaths`
@@ -284,7 +292,7 @@ cv_states_today = subset(cv_states, date==max(cv_states$date))
 # pop_density vs. cases
 cv_states_today %>% 
   plot_ly(x = ~pop_density, y = ~cases, 
-          type = 'scatter', mode = 'markers', color = ~'red',
+          type = 'scatter', mode = 'markers', color = ~state,
           size = ~population, sizes = c(5, 70), marker = list(sizemode='diameter', opacity=0.5))
 
 # filter out "District of Columbia"
@@ -293,19 +301,19 @@ cv_states_today_filter <- cv_states_today %>% filter(state!="District of Columbi
 # pop_density vs. cases after filtering
 cv_states_today_filter %>% 
   plot_ly(x = ~pop_density, y = ~cases, 
-          type = 'scatter', mode = 'markers', color = ~'red',
+          type = 'scatter', mode = 'markers', color = ~'state',
           size = ~population, sizes = c(5, 70), marker = list(sizemode='diameter', opacity=0.5))
 
 # pop_density vs. deathsper100k
 cv_states_today_filter %>% 
   plot_ly(x = ~pop_density, y = ~deathsper100k,
-          type = 'scatter', mode = 'markers', color = ~'blue',
+          type = 'scatter', mode = 'markers', color = ~'state',
           size = ~population, sizes = c(5, 70), marker = list(sizemode='diameter', opacity=0.5))
 
 # Adding hoverinfo
 cv_states_today_filter %>% 
   plot_ly(x = ~pop_density, y = ~deathsper100k,
-          type = 'scatter', mode = 'markers', color = ~'blue',
+          type = 'scatter', mode = 'markers', color = ~'state',
           size = ~population, sizes = c(5, 50), marker = list(sizemode='diameter', opacity=0.5),
           hoverinfo = 'text',
           text = ~paste( paste(state, ":", sep=""), paste(" Cases per 100k: ", per100k, sep="") , 
@@ -320,6 +328,7 @@ cv_states_today_filter %>%
 -   For `pop_density` vs. `newdeathsper100k` create a chart with the same variables using `gglot_ly()`
 -   Explore the pattern between $x$ and $y$ using `geom_smooth()`
     -   Explain what you see. Do you think `pop_density` is a correlate of `newdeathsper100k`?
+    - From the correlation slope, there appears to be a slightly inverse relationship between population density and deaths per 100k. Perhaps higher population density may attract more healthcare providers and more specialized care, and more resources, which may transfer to better outcomes. Lower population density may result in poor access to care. 
 
 ```{r}
 ### FINISH CODE HERE
@@ -339,6 +348,7 @@ ggplotly(p)
     -   Use the zoom and pan tools to inspect the `naive_CFR` for the states that had an increase in September. How have they changed over time?
 -   Create one more line chart, for Florida only, which shows `new_cases` and `new_deaths` together in one plot. Hint: use `add_layer()`
     -   Use hoverinfo to "eyeball" the approximate peak of deaths and peak of cases. What is the time delay between the peak of cases and the peak of deaths?
+    - Time delay appears to be 1 month between peaks of cases and peaks of deaths. 
 
 ```{r}
 
@@ -349,7 +359,7 @@ plot_ly(cv_states, x = ~date, y = ~naive_CFR, color = ~state, type = "scatter", 
 ### FINISH CODE HERE
 # Line chart for Florida showing new_cases and new_deaths together
 cv_states %>%
-  filter(state == "Florida") %>%
+  filter(state == "Florida") %>% filter(date > "2021-06-15") %>% 
   plot_ly(x = ~date, y = ~new_cases, type = "scatter", mode = "lines", name = "New Cases") %>%
   add_trace(y = ~new_deaths, type = "scatter", mode = "lines", name = "New Deaths")
 
@@ -358,6 +368,11 @@ cv_states %>%
 ### 9. Heatmaps
 
 Create a heatmap to visualize `new_cases` for each state on each date greater than June 1st, 2021 - Start by mapping selected features in the dataframe into a matrix using the **tidyr** package function `pivot_wider()`, naming the rows and columns, as done in the lecture notes - Use `plot_ly()` to create a heatmap out of this matrix. Which states stand out? - Repeat with `newper100k` variable. Now which states stand out? - Create a second heatmap in which the pattern of `new_cases` for each state over time becomes more clear by filtering to only look at dates every two weeks
+
+- California, Texas, Florida, and New York stand out for new cases. 
+- Rhode Island, New York, Alaska, and Kentucky stand out for new cases per 100k
+
+
 
 ```{r}
 
@@ -410,6 +425,7 @@ plot_ly(x=colnames(cv_states_mat2), y=rownames(cv_states_mat2),
 -   Compare with a map visualizing the `naive_CFR` by state on most recent date
 -   Plot the two maps together using `subplot()`. Make sure the shading is for the same range of values (google is your friend for this)
 -   Describe the difference in the pattern of the CFR.
+- States in the midwest ahd the south had the highest CFR. 
 
 ```{r}
 
